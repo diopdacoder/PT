@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.diop.pt.morning-brief</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/diop/Desktop/PT/cron/morning-brief.sh</string>
+  </array>
+
+  <!-- Run every day at 07:00 local time. -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>7</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <!-- launchd-level stdout/stderr (script also writes its own log). -->
+  <key>StandardOutPath</key>
+  <string>/Users/diop/Desktop/PT/logs/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/diop/Desktop/PT/logs/launchd.err.log</string>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/diop/Desktop/PT</string>
+</dict>
+</plist>
