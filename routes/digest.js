@@ -1,12 +1,56 @@
 import { Router } from 'express';
 import { google } from 'googleapis';
-import { loadDigest, saveDigest } from '../lib/digest.js';
+import { buildDigest, loadDigest, saveDigest } from '../lib/digest.js';
 import { getAuthedClient } from '../lib/google-oauth.js';
 import { requireOwner } from '../lib/session.js';
+import { isTwilioConfigured, sendSMS } from '../lib/twilio.js';
 
 const router = Router();
 
-// All digest routes require a session matching the assistant owner.
+// POST /d/trigger
+// Headless trigger for an external scheduler (Railway cron, cron-job.org, etc.).
+// Auth: Bearer token equal to env DIGEST_TRIGGER_TOKEN. Bypasses requireOwner
+// so it can be hit without a browser session. MUST be mounted before
+// router.use(requireOwner) below.
+router.post('/trigger', async (req, res, next) => {
+  try {
+    const expected = process.env.DIGEST_TRIGGER_TOKEN;
+    if (!expected) {
+      return res.status(500).json({ error: 'DIGEST_TRIGGER_TOKEN not configured' });
+    }
+    const auth = req.headers.authorization || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+    if (token !== expected) {
+      return res.status(401).json({ error: 'Invalid trigger token' });
+    }
+
+    const lookback = req.body?.lookback ?? '1d';
+    const minPriority = Number.isInteger(req.body?.minPriority) ? req.body.minPriority : 2;
+    const maxItems = Number.isInteger(req.body?.maxItems) ? req.body.maxItems : 5;
+
+    const result = await buildDigest({ lookback, minPriority, maxItems });
+
+    let smsSid = null;
+    if (result.count > 0 && isTwilioConfigured()) {
+      const sent = await sendSMS(result.smsBody);
+      smsSid = sent.sid;
+    }
+
+    res.json({
+      ok: true,
+      digestCount: result.count,
+      eventCount: result.eventCount ?? 0,
+      url: result.url,
+      smsSent: !!smsSid,
+      smsSid,
+      smsConfigured: isTwilioConfigured(),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// All other digest routes require a session matching the assistant owner.
 router.use(requireOwner);
 
 // Magic-link landing page.
