@@ -11,6 +11,11 @@ yarn-error.log*
 
 # OS / editor
 .DS_Store
+._*
 .vscode/
 .idea/
 *.swp
+
+# Random artifacts from macOS on external drives
+main
+._main
